@@ -324,10 +324,18 @@ function renderLeaderboard(entries) {
   }
 
   leaderboardList.innerHTML = entries
-    .map((entry, index) => {
+    .map((entry) => {
       const isCurrentUser = entry.user_id === session?.user?.id;
-      const label = isCurrentUser ? " (you)" : "";
-      return `<li><strong>${index + 1}. ${escapeHtml(entry.display_name)}</strong> <span class="muted">score ${entry.score}${label}</span></li>`;
+      const badge = isCurrentUser ? '<span class="leaderboard-badge">you</span>' : "";
+      return `
+        <li class="leaderboard-item">
+          <div class="leaderboard-line">
+            <strong>${escapeHtml(entry.display_name)}</strong>
+            ${badge}
+          </div>
+          <span class="muted">score ${entry.score}</span>
+        </li>
+      `;
     })
     .join("");
 }
