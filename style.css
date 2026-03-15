@@ -219,8 +219,24 @@ canvas {
   padding-left: 24px;
 }
 
+.leaderboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
 .leaderboard-list li {
   margin-bottom: 10px;
+}
+
+.refresh-button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  font-size: 1.2rem;
+  line-height: 1;
 }
 
 .instructions-list {

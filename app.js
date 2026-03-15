@@ -36,6 +36,7 @@ const feedbackToggleButton = document.getElementById("feedback-toggle-button");
 const feedbackInboxOpenButton = document.getElementById("feedback-inbox-open-button");
 const leaderboardJumpButton = document.getElementById("leaderboard-jump-button");
 const leaderboardSection = document.getElementById("leaderboard-section");
+const leaderboardRefreshButton = document.getElementById("leaderboard-refresh-button");
 const feedbackCard = document.getElementById("feedback-card");
 const feedbackInboxCard = document.getElementById("feedback-inbox-card");
 const feedbackInboxStatus = document.getElementById("feedback-inbox-status");
@@ -419,6 +420,11 @@ async function loadLeaderboard() {
     return;
   }
 
+  if (leaderboardRefreshButton) {
+    leaderboardRefreshButton.disabled = true;
+    leaderboardRefreshButton.textContent = "...";
+  }
+
   const { data, error } = await supabase
     .from("high_scores")
     .select("user_id, display_name, score")
@@ -428,10 +434,18 @@ async function loadLeaderboard() {
 
   if (error) {
     leaderboardList.innerHTML = `<li class="muted">${escapeHtml(error.message)}</li>`;
+    if (leaderboardRefreshButton) {
+      leaderboardRefreshButton.disabled = false;
+      leaderboardRefreshButton.textContent = "↻";
+    }
     return;
   }
 
   renderLeaderboard(data || []);
+  if (leaderboardRefreshButton) {
+    leaderboardRefreshButton.disabled = false;
+    leaderboardRefreshButton.textContent = "↻";
+  }
 }
 
 function renderFeedbackInbox(entries) {
@@ -798,6 +812,9 @@ modalCloseButtons.forEach((button) => {
 });
 leaderboardJumpButton.addEventListener("click", () => {
   leaderboardSection.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+leaderboardRefreshButton.addEventListener("click", () => {
+  loadLeaderboard();
 });
 feedbackForm.addEventListener("submit", handleFeedbackSubmit);
 
