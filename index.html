@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Snake Arena</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="card intro">
+      <p class="eyebrow">Shared leaderboard edition</p>
+      <h1>Snake Arena</h1>
+      <p class="lede">Players sign in, choose a display name, and compete for the top score on one public board.</p>
+    </section>
+
+    <section class="layout">
+      <section class="card auth-card">
+        <div class="auth-header">
+          <h2>Player Login</h2>
+          <p id="auth-status">Sign in or create an account to play.</p>
+        </div>
+
+        <form id="auth-form" class="stack">
+          <label>
+            <span>Email</span>
+            <input id="email-input" type="email" autocomplete="email" required>
+          </label>
+
+          <label>
+            <span>Password</span>
+            <input id="password-input" type="password" autocomplete="current-password" minlength="6" required>
+          </label>
+
+          <label>
+            <span>Display name</span>
+            <input id="display-name-input" type="text" maxlength="24" placeholder="Shown on the leaderboard">
+          </label>
+
+          <div class="actions">
+            <button id="sign-in-button" type="submit">Sign In</button>
+            <button id="sign-up-button" type="button" class="secondary">Create Account</button>
+            <button id="save-name-button" type="button" class="secondary hidden">Save Name</button>
+            <button id="sign-out-button" type="button" class="secondary hidden">Sign Out</button>
+          </div>
+        </form>
+
+        <p class="small">For the fastest demo flow, you can disable email confirmation in your Supabase auth settings. Otherwise players must confirm email before signing in.</p>
+      </section>
+
+      <section class="card game-card">
+        <div class="game-topbar">
+          <div>
+            <h2>Game</h2>
+            <p id="scoreboard">Score: 0 | Your Best: 0</p>
+          </div>
+
+          <div class="actions compact">
+            <button id="play-pause-button" type="button" disabled>Play</button>
+            <button id="restart-button" type="button" class="secondary" disabled>Restart</button>
+          </div>
+        </div>
+
+        <div class="board-shell">
+          <canvas id="game" width="480" height="480" aria-label="Snake game board"></canvas>
+          <div id="overlay" class="overlay">
+            <h3 id="overlay-title">Login required</h3>
+            <p id="overlay-message">Sign in and choose a display name to play.</p>
+          </div>
+        </div>
+
+        <p class="small">Move with Arrow keys or WASD. Pause with Space or P. Restart with R.</p>
+
+        <div class="touch-controls" aria-label="Touch controls">
+          <button class="touch up" type="button" data-direction="up">Up</button>
+          <button class="touch left" type="button" data-direction="left">Left</button>
+          <button class="touch right" type="button" data-direction="right">Right</button>
+          <button class="touch down" type="button" data-direction="down">Down</button>
+        </div>
+      </section>
+
+      <section class="card leaderboard-card">
+        <h2>Leaderboard</h2>
+        <ol id="leaderboard-list" class="leaderboard-list">
+          <li class="muted">No scores yet.</li>
+        </ol>
+      </section>
+    </section>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
