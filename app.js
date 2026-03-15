@@ -28,6 +28,25 @@ const emailInput = document.getElementById("email-input");
 const passwordInput = document.getElementById("password-input");
 const displayNameInput = document.getElementById("display-name-input");
 const authStatus = document.getElementById("auth-status");
+const modalShell = document.getElementById("modal-shell");
+const modalBackdrop = document.getElementById("modal-backdrop");
+const instructionsOpenButton = document.getElementById("instructions-open-button");
+const instructionsModal = document.getElementById("instructions-modal");
+const feedbackToggleButton = document.getElementById("feedback-toggle-button");
+const feedbackInboxOpenButton = document.getElementById("feedback-inbox-open-button");
+const leaderboardJumpButton = document.getElementById("leaderboard-jump-button");
+const leaderboardSection = document.getElementById("leaderboard-section");
+const feedbackCard = document.getElementById("feedback-card");
+const feedbackInboxCard = document.getElementById("feedback-inbox-card");
+const feedbackInboxStatus = document.getElementById("feedback-inbox-status");
+const feedbackInboxList = document.getElementById("feedback-inbox-list");
+const feedbackForm = document.getElementById("feedback-form");
+const feedbackStatus = document.getElementById("feedback-status");
+const feedbackCategoryInput = document.getElementById("feedback-category-input");
+const feedbackMessageInput = document.getElementById("feedback-message-input");
+const feedbackSubmitButton = document.getElementById("feedback-submit-button");
+const feedbackCancelButton = document.getElementById("feedback-cancel-button");
+const modalCloseButtons = document.querySelectorAll("[data-close-modal]");
 const scoreboard = document.getElementById("scoreboard");
 const overlay = document.getElementById("overlay");
 const overlayTitle = document.getElementById("overlay-title");
@@ -55,10 +74,22 @@ let playerHighScore = 0;
 let tickHandle = null;
 let isPaused = true;
 let state = newGame();
+let isAdmin = false;
+let activeModal = null;
 
 function setAuthMessage(message, isError = false) {
   authStatus.textContent = message;
   authStatus.style.color = isError ? "#a03f2b" : "#6d6558";
+}
+
+function setFeedbackMessage(message, isError = false) {
+  feedbackStatus.textContent = message;
+  feedbackStatus.style.color = isError ? "#a03f2b" : "#6d6558";
+}
+
+function setFeedbackInboxMessage(message, isError = false) {
+  feedbackInboxStatus.textContent = message;
+  feedbackInboxStatus.style.color = isError ? "#a03f2b" : "#6d6558";
 }
 
 function randomFood(snake) {
@@ -296,6 +327,14 @@ function canPlay() {
   return Boolean(session && playerProfile?.display_name && hasSupabaseConfig);
 }
 
+function canSendFeedback() {
+  return Boolean(session && hasSupabaseConfig);
+}
+
+function isAdminUser() {
+  return isAdmin;
+}
+
 function syncControlState() {
   const playable = canPlay();
   playPauseButton.disabled = !playable;
@@ -303,6 +342,32 @@ function syncControlState() {
   signOutButton.classList.toggle("hidden", !session);
   signUpButton.classList.toggle("hidden", Boolean(session));
   saveNameButton.classList.toggle("hidden", !session);
+  feedbackSubmitButton.disabled = !canSendFeedback();
+  feedbackInboxOpenButton.classList.toggle("hidden", !isAdminUser());
+}
+
+function openModal(name) {
+  activeModal = name;
+  modalShell.classList.remove("hidden");
+  modalShell.setAttribute("aria-hidden", "false");
+  instructionsModal.classList.toggle("hidden", name !== "instructions");
+  feedbackCard.classList.toggle("hidden", name !== "feedback");
+  feedbackInboxCard.classList.toggle("hidden", name !== "feedback-inbox");
+
+  if (name === "feedback" && !canSendFeedback()) {
+    setFeedbackMessage("Sign in first to send feedback.", true);
+  } else if (name === "feedback") {
+    setFeedbackMessage("Signed-in players can send suggestions for future improvements.");
+  }
+}
+
+function closeModal() {
+  activeModal = null;
+  modalShell.classList.add("hidden");
+  modalShell.setAttribute("aria-hidden", "true");
+  instructionsModal.classList.add("hidden");
+  feedbackCard.classList.add("hidden");
+  feedbackInboxCard.classList.add("hidden");
 }
 
 function draw() {
@@ -341,7 +406,7 @@ function renderLeaderboard(entries) {
 }
 
 function escapeHtml(value) {
-  return value
+  return String(value)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -367,6 +432,99 @@ async function loadLeaderboard() {
   }
 
   renderLeaderboard(data || []);
+}
+
+function renderFeedbackInbox(entries) {
+  if (!entries.length) {
+    feedbackInboxList.innerHTML = '<p class="muted">No feedback yet.</p>';
+    return;
+  }
+
+  feedbackInboxList.innerHTML = entries
+    .map((entry) => {
+      const created = new Date(entry.created_at).toLocaleString();
+      return `
+        <article class="feedback-entry">
+          <div class="feedback-entry-head">
+            <div>
+              <strong>${escapeHtml(entry.display_name)}</strong>
+              <div class="feedback-meta">${escapeHtml(entry.email)} | ${escapeHtml(created)}</div>
+            </div>
+            <span class="feedback-category">${escapeHtml(entry.category)}</span>
+          </div>
+          <p>${escapeHtml(entry.message)}</p>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+async function loadFeedbackInbox() {
+  if (!supabase || !isAdminUser()) {
+    feedbackInboxList.innerHTML = '<p class="muted">Admin feedback will appear here.</p>';
+    setFeedbackInboxMessage("Sign in with an admin account to review player feedback.");
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("feedback")
+    .select("display_name, email, category, message, created_at")
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if (error) {
+    setFeedbackInboxMessage(error.message, true);
+    feedbackInboxList.innerHTML = '<p class="muted">Could not load feedback.</p>';
+    return;
+  }
+
+  setFeedbackInboxMessage("Latest player feedback");
+  renderFeedbackInbox(data || []);
+}
+
+async function loadAdminStatus() {
+  if (!supabase || !session) {
+    isAdmin = false;
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("admin_users")
+    .select("user_id")
+    .eq("user_id", session.user.id)
+    .maybeSingle();
+
+  if (error) {
+    isAdmin = false;
+    return;
+  }
+
+  isAdmin = Boolean(data?.user_id);
+}
+
+async function submitFeedback() {
+  if (!supabase || !session) {
+    throw new Error("Please sign in before sending feedback.");
+  }
+
+  const message = feedbackMessageInput.value.trim();
+  if (message.length < 8) {
+    throw new Error("Please add a little more detail before sending feedback.");
+  }
+
+  const payload = {
+    user_id: session.user.id,
+    display_name: playerProfile?.display_name || "Unknown",
+    email: session.user.email,
+    category: feedbackCategoryInput.value,
+    message,
+  };
+
+  const { error } = await supabase.from("feedback").insert(payload);
+
+  if (error) {
+    throw error;
+  }
 }
 
 async function loadPlayerProfile() {
@@ -514,10 +672,12 @@ async function handleSignOut() {
   playerProfile = null;
   playerHighScore = 0;
   isPaused = true;
+  isAdmin = false;
   state = newGame();
   setAuthMessage("Signed out.");
   draw();
   await loadLeaderboard();
+  await loadFeedbackInbox();
 }
 
 async function handleSaveName() {
@@ -531,6 +691,27 @@ async function handleSaveName() {
   }
 }
 
+async function handleFeedbackSubmit(event) {
+  event.preventDefault();
+
+  try {
+    feedbackSubmitButton.disabled = true;
+    feedbackCancelButton.disabled = true;
+    await submitFeedback();
+    feedbackForm.reset();
+    feedbackCategoryInput.value = "gameplay";
+    setFeedbackMessage("Thanks. Your feedback has been saved.");
+    if (isAdminUser()) {
+      await loadFeedbackInbox();
+    }
+  } catch (error) {
+    setFeedbackMessage(error.message, true);
+  } finally {
+    feedbackSubmitButton.disabled = !canSendFeedback();
+    feedbackCancelButton.disabled = false;
+  }
+}
+
 async function refreshForSession(nextSession) {
   session = nextSession;
   stopLoop();
@@ -538,17 +719,20 @@ async function refreshForSession(nextSession) {
   isPaused = true;
 
   if (session) {
+    await loadAdminStatus();
     await loadPlayerProfile();
     if (displayNameInput.value.trim() && !playerProfile?.display_name) {
       await saveDisplayName(displayNameInput.value);
     }
     setAuthMessage(`Signed in as ${session.user.email}`);
   } else {
+    isAdmin = false;
     playerProfile = null;
     playerHighScore = 0;
   }
 
   await loadLeaderboard();
+  await loadFeedbackInbox();
   draw();
 }
 
@@ -561,6 +745,11 @@ function handleDirectionInput(name) {
 
 document.addEventListener("keydown", (event) => {
   const key = event.key.toLowerCase();
+
+  if (key === "escape" && activeModal) {
+    closeModal();
+    return;
+  }
 
   if (["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "spacebar"].includes(key)) {
     event.preventDefault();
@@ -599,6 +788,18 @@ saveNameButton.addEventListener("click", handleSaveName);
 signOutButton.addEventListener("click", handleSignOut);
 playPauseButton.addEventListener("click", togglePause);
 restartButton.addEventListener("click", restartGame);
+instructionsOpenButton.addEventListener("click", () => openModal("instructions"));
+feedbackToggleButton.addEventListener("click", () => openModal("feedback"));
+feedbackInboxOpenButton.addEventListener("click", () => openModal("feedback-inbox"));
+feedbackCancelButton.addEventListener("click", closeModal);
+modalBackdrop.addEventListener("click", closeModal);
+modalCloseButtons.forEach((button) => {
+  button.addEventListener("click", closeModal);
+});
+leaderboardJumpButton.addEventListener("click", () => {
+  leaderboardSection.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+feedbackForm.addEventListener("submit", handleFeedbackSubmit);
 
 touchButtons.forEach((button) => {
   button.addEventListener("click", () => {
@@ -618,5 +819,6 @@ if (supabase) {
   loadLeaderboard();
 } else {
   leaderboardList.innerHTML = '<li class="muted">Add Supabase config to load the leaderboard.</li>';
+  feedbackInboxList.innerHTML = '<p class="muted">Add Supabase config to load feedback.</p>';
   draw();
 }
