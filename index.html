@@ -10,43 +10,53 @@
   <main class="shell">
     <section class="card intro">
       <p class="eyebrow">Shared leaderboard edition</p>
-      <h1>Snake Arena</h1>
-      <p class="lede">Players sign in, choose a display name, and compete for the top score on one public board.</p>
+      <div class="intro-bar">
+        <h1>Snake Arena</h1>
+        <div class="intro-actions">
+          <button id="instructions-open-button" type="button" class="secondary">Instructions</button>
+          <button id="feedback-toggle-button" type="button" class="secondary">Give Feedback</button>
+          <button id="feedback-inbox-open-button" type="button" class="secondary hidden">Feedback Inbox</button>
+          <button id="leaderboard-jump-button" type="button" class="secondary">Quick Leaderboard</button>
+        </div>
+      </div>
     </section>
 
     <section class="layout">
-      <section class="card auth-card">
-        <div class="auth-header">
-          <h2>Player Login</h2>
-          <p id="auth-status">Sign in or create an account to play.</p>
-        </div>
-
-        <form id="auth-form" class="stack">
-          <label>
-            <span>Email</span>
-            <input id="email-input" type="email" autocomplete="email" required>
-          </label>
-
-          <label>
-            <span>Password</span>
-            <input id="password-input" type="password" autocomplete="current-password" minlength="6" required>
-          </label>
-
-          <label>
-            <span>Display name</span>
-            <input id="display-name-input" type="text" maxlength="24" placeholder="Shown on the leaderboard">
-          </label>
-
-          <div class="actions">
-            <button id="sign-in-button" type="submit">Sign In</button>
-            <button id="sign-up-button" type="button" class="secondary">Create Account</button>
-            <button id="save-name-button" type="button" class="secondary hidden">Save Name</button>
-            <button id="sign-out-button" type="button" class="secondary hidden">Sign Out</button>
+      <div class="auth-column">
+        <section class="card auth-card">
+          <div class="auth-header">
+            <div>
+              <p class="eyebrow section-tag">Account</p>
+              <h2>Player Login</h2>
+            </div>
+            <p id="auth-status" class="status-note">Sign in or create an account to play.</p>
           </div>
-        </form>
 
-        <p class="small">For the fastest demo flow, you can disable email confirmation in your Supabase auth settings. Otherwise players must confirm email before signing in.</p>
-      </section>
+          <form id="auth-form" class="stack">
+            <label>
+              <span>Email</span>
+              <input id="email-input" type="email" autocomplete="email" required>
+            </label>
+
+            <label>
+              <span>Password</span>
+              <input id="password-input" type="password" autocomplete="current-password" minlength="6" required>
+            </label>
+
+            <label>
+              <span>Display name</span>
+              <input id="display-name-input" type="text" maxlength="24" placeholder="Shown on the leaderboard">
+            </label>
+
+            <div class="actions">
+              <button id="sign-in-button" type="submit">Sign In</button>
+              <button id="sign-up-button" type="button" class="secondary">Create Account</button>
+              <button id="save-name-button" type="button" class="secondary hidden">Save Name</button>
+              <button id="sign-out-button" type="button" class="secondary hidden">Sign Out</button>
+            </div>
+          </form>
+        </section>
+      </div>
 
       <section class="card game-card">
         <div class="game-topbar">
@@ -79,7 +89,7 @@
         </div>
       </section>
 
-      <section class="card leaderboard-card">
+      <section id="leaderboard-section" class="card leaderboard-card">
         <h2>Leaderboard</h2>
         <ol id="leaderboard-list" class="leaderboard-list">
           <li class="muted">No scores yet.</li>
@@ -87,6 +97,75 @@
       </section>
     </section>
   </main>
+
+  <div id="modal-shell" class="modal-shell hidden" aria-hidden="true">
+    <div id="modal-backdrop" class="modal-backdrop"></div>
+
+    <section id="instructions-modal" class="card modal-card hidden" role="dialog" aria-modal="true" aria-labelledby="instructions-modal-title">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow section-tag">Instructions</p>
+          <h2 id="instructions-modal-title">How To Join</h2>
+        </div>
+        <button class="modal-close secondary" type="button" data-close-modal="true">Close</button>
+      </div>
+      <ol class="instructions-list">
+        <li>Create an account the first time you visit.</li>
+        <li>Sign in with your email and password.</li>
+        <li>Pick a display name that will appear on the leaderboard.</li>
+        <li>Press Play and try to set the best score.</li>
+      </ol>
+    </section>
+
+    <section id="feedback-card" class="card modal-card hidden" role="dialog" aria-modal="true" aria-labelledby="feedback-modal-title">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow section-tag">Feedback</p>
+          <h2 id="feedback-modal-title">Share An Improvement Idea</h2>
+        </div>
+        <button id="feedback-cancel-button" class="modal-close secondary" type="button">Close</button>
+      </div>
+      <p id="feedback-status" class="status-note">Signed-in players can send suggestions for future improvements.</p>
+
+      <form id="feedback-form" class="stack">
+        <label>
+          <span>Category</span>
+          <select id="feedback-category-input">
+            <option value="gameplay">Gameplay</option>
+            <option value="controls">Controls</option>
+            <option value="leaderboard">Leaderboard</option>
+            <option value="login">Login</option>
+            <option value="design">Design</option>
+            <option value="bug">Bug report</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Message</span>
+          <textarea id="feedback-message-input" rows="5" maxlength="600" placeholder="What should we improve?"></textarea>
+        </label>
+
+        <div class="actions">
+          <button id="feedback-submit-button" type="submit">Send Feedback</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="feedback-inbox-card" class="card modal-card hidden" role="dialog" aria-modal="true" aria-labelledby="feedback-inbox-title">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow section-tag">Admin</p>
+          <h2 id="feedback-inbox-title">Feedback Inbox</h2>
+        </div>
+        <button class="modal-close secondary" type="button" data-close-modal="true">Close</button>
+      </div>
+      <p id="feedback-inbox-status" class="status-note">Sign in with an admin account to review player feedback.</p>
+      <div id="feedback-inbox-list" class="feedback-inbox-list">
+        <p class="muted">No feedback loaded.</p>
+      </div>
+    </section>
+  </div>
 
   <script type="module" src="app.js"></script>
 </body>
